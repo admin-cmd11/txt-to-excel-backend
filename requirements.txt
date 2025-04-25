@@ -1,0 +1,6 @@
+Flask
+pandas
+openpyxl
+werkzeug
+Flask-CORS
+gunicorn
