@@ -4,3 +4,4 @@ openpyxl
 werkzeug
 Flask-CORS
 gunicorn
+firebase_admin
