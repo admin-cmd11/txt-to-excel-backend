@@ -42,6 +42,8 @@ app.config['TEMP_FOLDER'] = TEMP_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(TEMP_FOLDER, exist_ok=True)
 
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 def generate_otp(length=4):
     return random.randrange(1000, 9999)
 
