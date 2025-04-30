@@ -43,13 +43,6 @@ except Exception as e:
 
 # ... rest of your app.py code ...
 
-@app.route('/test-firebase-init', methods=['GET'])
-def test_firebase_init():
-    print(f"Firebase initialized in test endpoint: {firebase_initialized}")
-    if firebase_initialized:
-        return jsonify({"message": "Firebase Admin SDK is initialized."}), 200
-    else:
-        return jsonify({"error": "Firebase Admin SDK is NOT initialized."}), 500
 
 # Email configuration (use environment variables)
 EMAIL = os.environ.get('EMAIL_ADDRESS')
