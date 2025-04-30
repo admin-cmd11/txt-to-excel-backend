@@ -17,13 +17,20 @@ CORS(app)
 
 # Firebase Admin SDK Initialization
 try:
-    cred_str = os.environ.get('FIREBASE_ADMIN_CREDENTIALS')
-    if cred_str:
+    # Try to load credentials from the file path specified in the environment variable
+    cred_path = os.environ.get('FIREBASE_ADMIN_CREDENTIALS_PATH')
+    if cred_path:
+        cred = credentials.Certificate(cred_path)
+        firebase_admin.initialize_app(cred)
+        print("Firebase Admin SDK initialized successfully via file.")
+    elif 'FIREBASE_ADMIN_CREDENTIALS' in os.environ:
+        # Fallback to loading from JSON string (less reliable on Render)
+        cred_str = os.environ.get('FIREBASE_ADMIN_CREDENTIALS')
         cred = credentials.Certificate(json.loads(cred_str))
         firebase_admin.initialize_app(cred)
-        print("Firebase Admin SDK initialized successfully.")
+        print("Firebase Admin SDK initialized successfully via JSON string (less reliable on Render).")
     else:
-        print("Warning: FIREBASE_ADMIN_CREDENTIALS environment variable not set.")
+        print("Warning: Neither FIREBASE_ADMIN_CREDENTIALS_PATH nor FIREBASE_ADMIN_CREDENTIALS environment variable is set.")
 except Exception as e:
     print(f"Error initializing Firebase Admin SDK: {e}")
 
