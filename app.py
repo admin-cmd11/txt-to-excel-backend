@@ -16,23 +16,29 @@ app = Flask(__name__)
 CORS(app)
 
 # Firebase Admin SDK Initialization
+import os
+import json
+import firebase_admin
+from firebase_admin import credentials, auth
+
+# Firebase Admin SDK Initialization
 try:
-    # Try to load credentials from the file path specified in the environment variable
     cred_path = os.environ.get('FIREBASE_ADMIN_CREDENTIALS_PATH')
-    if cred_path:
+    if cred_path and os.path.exists(cred_path):
         cred = credentials.Certificate(cred_path)
         firebase_admin.initialize_app(cred)
-        print("Firebase Admin SDK initialized successfully via file.")
+        print(f"Firebase Admin SDK initialized successfully from file: {cred_path}")
     elif 'FIREBASE_ADMIN_CREDENTIALS' in os.environ:
-        # Fallback to loading from JSON string (less reliable on Render)
         cred_str = os.environ.get('FIREBASE_ADMIN_CREDENTIALS')
         cred = credentials.Certificate(json.loads(cred_str))
         firebase_admin.initialize_app(cred)
-        print("Firebase Admin SDK initialized successfully via JSON string (less reliable on Render).")
+        print("Firebase Admin SDK initialized successfully via JSON string.")
     else:
-        print("Warning: Neither FIREBASE_ADMIN_CREDENTIALS_PATH nor FIREBASE_ADMIN_CREDENTIALS environment variable is set.")
+        print("Warning: Neither FIREBASE_ADMIN_CREDENTIALS_PATH (exists: {os.path.exists(cred_path) if cred_path else False}) nor FIREBASE_ADMIN_CREDENTIALS environment variable is set.")
 except Exception as e:
     print(f"Error initializing Firebase Admin SDK: {e}")
+
+# ... rest of your app.py ...
 
 # Email configuration (use environment variables)
 EMAIL = os.environ.get('EMAIL_ADDRESS')
@@ -90,6 +96,7 @@ def signup_request_otp():
         return jsonify({'error': 'Failed to send sign-up OTP'}), 500
 
 @app.route('/signup/verify-otp', methods=['POST'])
+@app.route('/signup/verify-otp', methods=['POST'])
 def signup_verify_otp():
     data = request.get_json()
     if not data or 'email' not in data or 'otp' not in data or 'password' not in data:
@@ -107,7 +114,8 @@ def signup_verify_otp():
                     user = auth.create_user(email=email, password=password)
                     print(f"Successfully created new user in Firebase: {user.uid}")
                     return jsonify({'message': 'Account created successfully'}), 201
-                except auth.FirebaseError as e:
+                except Exception as e:  # Catch a more general exception
+                    print(f"Firebase error creating user: {e}")
                     return jsonify({'error': f'Firebase error creating user: {e}'}), 500
             else:
                 return jsonify({'error': 'Invalid OTP'}), 401
