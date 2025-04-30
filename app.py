@@ -1,3 +1,9 @@
+from flask import Flask, render_template, request, send_file
+import os
+from werkzeug.utils import secure_filename
+from converter import convert_text_to_excel
+import atexit
+import shutil
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import smtplib
@@ -6,45 +12,37 @@ import time
 import os
 import firebase_admin
 from firebase_admin import credentials, auth
-from converter import convert_text_to_excel
-from werkzeug.utils import secure_filename
-import shutil
-import atexit
 import json
-
 app = Flask(__name__)
 CORS(app)
 
 # Firebase Admin SDK Initialization
 try:
-    cred_str = os.environ.get('FIREBASE_ADMIN_CREDENTIALS')
-    if cred_str:
+    # Try to load credentials from the file path specified in the environment variable
+    cred_path = os.environ.get('FIREBASE_ADMIN_CREDENTIALS_PATH')
+    if cred_path:
+        cred = credentials.Certificate(cred_path)
+        firebase_admin.initialize_app(cred)
+        print("Firebase Admin SDK initialized successfully via file.")
+    elif 'FIREBASE_ADMIN_CREDENTIALS' in os.environ:
+        # Fallback to loading from JSON string (less reliable on Render)
+        cred_str = os.environ.get('FIREBASE_ADMIN_CREDENTIALS')
         cred = credentials.Certificate(json.loads(cred_str))
         firebase_admin.initialize_app(cred)
-        print("Firebase Admin SDK initialized successfully.")
+        print("Firebase Admin SDK initialized successfully via JSON string (less reliable on Render).")
     else:
-        print("Warning: FIREBASE_ADMIN_CREDENTIALS environment variable not set.")
+        print("Warning: Neither FIREBASE_ADMIN_CREDENTIALS_PATH nor FIREBASE_ADMIN_CREDENTIALS environment variable is set.")
 except Exception as e:
     print(f"Error initializing Firebase Admin SDK: {e}")
 
 # Email configuration (use environment variables)
-EMAIL = os.environ.get('EMAIL_ADDRESS')
-PASSWORD = os.environ.get('EMAIL_PASSWORD')
+EMAIL = os.environ.get('report.vvs@gmail.com')
+PASSWORD = os.environ.get('fhwwtlvxatblopjc')
 
 # Temporary storage for OTPs during signup
 signup_otp_store = {}
 OTP_EXPIRATION_TIME = 300  # 5 minutes
 
-UPLOAD_FOLDER = 'uploads'
-TEMP_FOLDER = 'temp'
-ALLOWED_EXTENSIONS = {'txt'}
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['TEMP_FOLDER'] = TEMP_FOLDER
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(TEMP_FOLDER, exist_ok=True)
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 def generate_otp(length=4):
     return random.randrange(1000, 9999)
 
@@ -63,11 +61,6 @@ def send_otp_email(receiver_email, otp):
     except Exception as e:
         print(f"Error sending sign-up OTP email: {e}")
         return False
-
-@app.route('/', methods=['GET'])
-def backend_status():
-    """Returns a simple JSON status indicating the backend is running."""
-    return jsonify({"status": "CBSE Results to Excel Backend API is running"})
 
 @app.route('/signup/request-otp', methods=['POST'])
 def signup_request_otp():
@@ -110,38 +103,53 @@ def signup_verify_otp():
     else:
         return jsonify({'error': 'Sign-up OTP not requested for this email'}), 400
 
-@app.route('/process-file', methods=['POST'])
+
+UPLOAD_FOLDER = 'uploads'
+TEMP_FOLDER = 'temp'  # Create a temporary folder for generated files
+ALLOWED_EXTENSIONS = {'txt'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['TEMP_FOLDER'] = TEMP_FOLDER
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(TEMP_FOLDER, exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/', methods=['GET'])
+def upload_form():
+    return render_template('upload.html')
+
+@app.route('/', methods=['POST'])
 def process_file():
-    """Handles the upload of the TXT file, processes it, and returns the Excel file."""
     if 'file' not in request.files:
-        return jsonify({'error': 'No file part'}), 400
+        return "No file part"
     file = request.files['file']
     if file.filename == '':
-        return jsonify({'error': 'No selected file'}), 400
+        return "No selected file"
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
         try:
+            # Generate the temporary Excel file in the TEMP_FOLDER
             temp_excel_filename = os.path.join(app.config['TEMP_FOLDER'], 'cbse_results_' + os.path.splitext(filename)[0] + '.xlsx')
             convert_text_to_excel(filepath, temp_excel_filename)
             return send_file(temp_excel_filename, as_attachment=True, download_name='cbse_results.xlsx')
         except ValueError as e:
-            return jsonify({'error': str(e)}), 400
+            return f"Error: {str(e)}"
         finally:
-            os.remove(filepath)
-            if os.path.exists(temp_excel_filename):
-                os.remove(temp_excel_filename)
-    return jsonify({'error': 'Invalid file type'}), 400
+            os.remove(filepath) # Clean up the uploaded text file
+            # We will clean up the temporary Excel files later
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return "Invalid file type"
 
+# Function to clean up temporary files
 def cleanup_temp_folder():
     if os.path.exists(app.config['TEMP_FOLDER']):
         shutil.rmtree(app.config['TEMP_FOLDER'])
-        os.makedirs(app.config['TEMP_FOLDER'])
+        os.makedirs(app.config['TEMP_FOLDER']) # Recreate the folder for future use
 
+# Register the cleanup function to run when the app exits
 atexit.register(cleanup_temp_folder)
 
 if __name__ == '__main__':
