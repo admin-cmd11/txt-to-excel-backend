@@ -1,5 +1,4 @@
-from flask import Flask, request, jsonify
-from flask import Flask, render_template, request, send_file, jsonify
+ffrom flask import Flask, request, jsonify, render_template, send_file
 from flask_cors import CORS
 import smtplib
 import random
@@ -15,11 +14,6 @@ import json
 
 app = Flask(__name__)
 CORS(app)
-
-import os
-import json
-import firebase_admin
-from firebase_admin import credentials, auth
 
 # Firebase Admin SDK Initialization (Check if already initialized)
 try:
@@ -42,6 +36,7 @@ try:
 except Exception as e:
     print(f"Outer error during Firebase Admin SDK initialization: {e}")
 
+# ... rest of your app.py code ...
 # Email configuration (use environment variables)
 EMAIL = os.environ.get('EMAIL_ADDRESS')
 PASSWORD = os.environ.get('EMAIL_PASSWORD')
