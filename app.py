@@ -84,7 +84,19 @@ def send_otp_email(receiver_email, otp):
 def backend_status():
     """Returns a simple JSON status indicating the backend is running."""
     return jsonify({"status": "CBSE Results to Excel Backend API is running"})
-
+@app.route('/test-firebase-init', methods=['GET'])
+def test_firebase_init():
+    try:
+        cred_str = os.environ.get('FIREBASE_ADMIN_CREDENTIALS')
+        if cred_str:
+            cred_info = json.loads(cred_str)
+            cred = credentials.Certificate(cred_info)
+            firebase_admin.initialize_app(cred)
+            return jsonify({"message": "Firebase Admin SDK initialized successfully for test."}), 200
+        else:
+            return jsonify({"error": "FIREBASE_ADMIN_CREDENTIALS not set for test."}), 400
+    except Exception as e:
+        return jsonify({"error": f"Error initializing Firebase Admin SDK for test: {e}"}), 500
 @app.route('/signup/request-otp', methods=['POST'])
 def signup_request_otp():
     data = request.get_json()
