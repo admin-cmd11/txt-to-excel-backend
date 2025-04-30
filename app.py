@@ -16,27 +16,27 @@ app = Flask(__name__)
 CORS(app)
 
 # Firebase Admin SDK Initialization (Check if already initialized)
-try:
-    if not firebase_admin._apps:  # Check if any Firebase app has been initialized
-        cred_str = os.environ.get('FIREBASE_ADMIN_CREDENTIALS')
-        if cred_str:
-            try:
-                cred_json = json.loads(cred_str)
-                cred = credentials.Certificate(cred_json)
-                firebase_admin.initialize_app(cred)
-                print("Firebase Admin SDK initialized successfully via explicit JSON string.")
-            except json.JSONDecodeError as e:
-                print(f"Error decoding FIREBASE_ADMIN_CREDENTIALS JSON: {e}")
-            except Exception as e:
-                print(f"Error initializing Firebase Admin SDK: {e}")
-        else:
-            print("Warning: FIREBASE_ADMIN_CREDENTIALS environment variable not set.")
-    else:
-        print("Firebase Admin SDK already initialized.")
-except Exception as e:
-    print(f"Outer error during Firebase Admin SDK initialization: {e}")
+# Global Firebase App instance
+firebase_app = None
 
-# ... rest of your app.py code ...
+# Firebase Admin SDK Initialization (Ensure only one initialization)
+if not firebase_admin._apps:
+    cred_str = os.environ.get('FIREBASE_ADMIN_CREDENTIALS')
+    if cred_str:
+        try:
+            cred_json = json.loads(cred_str)
+            cred = credentials.Certificate(cred_json)
+            firebase_app = firebase_admin.initialize_app(cred)
+            print("Firebase Admin SDK initialized successfully.")
+        except json.JSONDecodeError as e:
+            print(f"Error decoding FIREBASE_ADMIN_CREDENTIALS JSON: {e}")
+        except Exception as e:
+            print(f"Error initializing Firebase Admin SDK: {e}")
+    else:
+        print("Warning: FIREBASE_ADMIN_CREDENTIALS environment variable not set.")
+else:
+    print("Firebase Admin SDK already initialized.")
+
 # Email configuration (use environment variables)
 EMAIL = os.environ.get('EMAIL_ADDRESS')
 PASSWORD = os.environ.get('EMAIL_PASSWORD')
