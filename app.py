@@ -23,21 +23,23 @@ import firebase_admin
 from firebase_admin import credentials, auth
 
 # Firebase Admin SDK Initialization
+# Firebase Admin SDK Initialization (Explicitly load from JSON string)
 try:
-    cred_path = os.environ.get('FIREBASE_ADMIN_CREDENTIALS_PATH')
-    if cred_path and os.path.exists(cred_path):
-        cred = credentials.Certificate(cred_path)
-        firebase_admin.initialize_app(cred)
-        print(f"Firebase Admin SDK initialized successfully from file: {cred_path}")
-    elif 'FIREBASE_ADMIN_CREDENTIALS' in os.environ:
-        cred_str = os.environ.get('FIREBASE_ADMIN_CREDENTIALS')
-        cred = credentials.Certificate(json.loads(cred_str))
-        firebase_admin.initialize_app(cred)
-        print("Firebase Admin SDK initialized successfully via JSON string.")
+    cred_str = os.environ.get('FIREBASE_ADMIN_CREDENTIALS')
+    if cred_str:
+        try:
+            cred_json = json.loads(cred_str)
+            cred = credentials.Certificate(cred_json)
+            firebase_admin.initialize_app(cred)
+            print("Firebase Admin SDK initialized successfully via explicit JSON string.")
+        except json.JSONDecodeError as e:
+            print(f"Error decoding FIREBASE_ADMIN_CREDENTIALS JSON: {e}")
+        except Exception as e:
+            print(f"Error initializing Firebase Admin SDK: {e}")
     else:
-        print("Warning: Neither FIREBASE_ADMIN_CREDENTIALS_PATH (exists: {os.path.exists(cred_path) if cred_path else False}) nor FIREBASE_ADMIN_CREDENTIALS environment variable is set.")
+        print("Warning: FIREBASE_ADMIN_CREDENTIALS environment variable not set.")
 except Exception as e:
-    print(f"Error initializing Firebase Admin SDK: {e}")
+    print(f"Outer error during Firebase Admin SDK initialization: {e}")
 
 # ... rest of your app.py ...
 
