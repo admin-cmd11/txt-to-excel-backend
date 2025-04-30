@@ -90,8 +90,11 @@ def test_firebase_init():
         if cred_str:
             cred_info = json.loads(cred_str)
             cred = credentials.Certificate(cred_info)
-            firebase_admin.initialize_app(cred)
-            return jsonify({"message": "Firebase Admin SDK initialized successfully for test."}), 200
+            if not firebase_admin._apps:
+                firebase_admin.initialize_app(cred)
+                return jsonify({"message": "Firebase Admin SDK initialized successfully for test."}), 200
+            else:
+                return jsonify({"message": "Firebase Admin SDK was already initialized."}), 200
         else:
             return jsonify({"error": "FIREBASE_ADMIN_CREDENTIALS not set for test."}), 400
     except Exception as e:
