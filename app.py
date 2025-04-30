@@ -15,27 +15,41 @@ import json
 app = Flask(__name__)
 CORS(app)
 
-# Firebase Admin SDK Initialization (Check if already initialized)
-# Global Firebase App instance
+# Global Firebase App instance and initialization flag
 firebase_app = None
+firebase_initialized = False
 
 # Firebase Admin SDK Initialization (Ensure only one initialization)
-if not firebase_admin._apps:
-    cred_str = os.environ.get('FIREBASE_ADMIN_CREDENTIALS')
-    if cred_str:
-        try:
-            cred_json = json.loads(cred_str)
-            cred = credentials.Certificate(cred_json)
-            firebase_app = firebase_admin.initialize_app(cred)
-            print("Firebase Admin SDK initialized successfully.")
-        except json.JSONDecodeError as e:
-            print(f"Error decoding FIREBASE_ADMIN_CREDENTIALS JSON: {e}")
-        except Exception as e:
-            print(f"Error initializing Firebase Admin SDK: {e}")
+try:
+    if not firebase_initialized:
+        cred_str = os.environ.get('FIREBASE_ADMIN_CREDENTIALS')
+        if cred_str:
+            try:
+                cred_json = json.loads(cred_str)
+                cred = credentials.Certificate(cred_json)
+                firebase_app = firebase_admin.initialize_app(cred)
+                firebase_initialized = True
+                print("Firebase Admin SDK initialized successfully.")
+            except json.JSONDecodeError as e:
+                print(f"Error decoding FIREBASE_ADMIN_CREDENTIALS JSON: {e}")
+            except Exception as e:
+                print(f"Error initializing Firebase Admin SDK: {e}")
+        else:
+            print("Warning: FIREBASE_ADMIN_CREDENTIALS environment variable not set.")
     else:
-        print("Warning: FIREBASE_ADMIN_CREDENTIALS environment variable not set.")
-else:
-    print("Firebase Admin SDK already initialized.")
+        print("Firebase Admin SDK already initialized.")
+except Exception as e:
+    print(f"Outer error during Firebase Admin SDK initialization: {e}")
+
+# ... rest of your app.py code ...
+
+@app.route('/test-firebase-init', methods=['GET'])
+def test_firebase_init():
+    print(f"Firebase initialized in test endpoint: {firebase_initialized}")
+    if firebase_initialized:
+        return jsonify({"message": "Firebase Admin SDK is initialized."}), 200
+    else:
+        return jsonify({"error": "Firebase Admin SDK is NOT initialized."}), 500
 
 # Email configuration (use environment variables)
 EMAIL = os.environ.get('EMAIL_ADDRESS')
