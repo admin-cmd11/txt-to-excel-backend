@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask import Flask, render_template, request, send_file, jsonify
 from flask_cors import CORS
 import smtplib
 import random
