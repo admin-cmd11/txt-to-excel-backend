@@ -15,7 +15,7 @@ import json
 
 app = Flask(__name__)
 CORS(app)
-
+cors = CORS(app, resources={r"/*": {"origins": "https://one-stopp.netlify.app", "supports_credentials": True}})
 # Global Firebase App instance and initialization flag
 firebase_app = None
 firebase_initialized = False
