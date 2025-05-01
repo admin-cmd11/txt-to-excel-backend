@@ -172,13 +172,20 @@ def session_login():
         return jsonify({'error': 'Missing ID token'}), 400
 
     try:
-        # Verify Firebase ID token
+        # Verify the token
         decoded_token = auth.verify_id_token(id_token)
-        session['user_email'] = decoded_token['email']
-        return jsonify({'message': 'Login successful'}), 200
+        user_email = decoded_token.get('email')
+
+        if not user_email:
+            return jsonify({'error': 'Token does not contain email'}), 400
+
+        # Store in session
+        session['user_email'] = user_email
+        return jsonify({'message': 'Session login successful'}), 200
+
     except Exception as e:
-        print(f"Auth error: {e}")
-        return jsonify({'error': 'Unauthorized'}), 401
+        print(f"Error verifying ID token: {e}")
+        return jsonify({'error': 'Invalid or expired token'}), 401
 
 @app.route('/process-file', methods=['POST'])
 def process_file():
