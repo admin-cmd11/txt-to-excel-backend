@@ -169,23 +169,29 @@ def signup_verify_otp():
 def session_login():
     id_token = request.json.get('idToken')
     if not id_token:
+        print("Error: Missing ID token")  # Added logging
         return jsonify({'error': 'Missing ID token'}), 400
 
     try:
         # Verify the token
+        print(f"Received ID token: {id_token}") # Log the ID Token
         decoded_token = auth.verify_id_token(id_token)
+        print(f"Decoded token: {decoded_token}") # Log the decoded token
         user_email = decoded_token.get('email')
 
         if not user_email:
+            print("Error: Token does not contain email") # Added logging
             return jsonify({'error': 'Token does not contain email'}), 400
 
         # Store in session
         session['user_email'] = user_email
+        print(f"Session set for user: {user_email}")  # Added logging
         return jsonify({'message': 'Session login successful'}), 200
 
     except Exception as e:
         print(f"Error verifying ID token: {e}")
         return jsonify({'error': 'Invalid or expired token'}), 401
+
 
 @app.route('/process-file', methods=['POST'])
 def process_file():
