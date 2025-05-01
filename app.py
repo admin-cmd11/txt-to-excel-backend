@@ -79,6 +79,15 @@ def send_otp_email(receiver_email, otp):
     except Exception as e:
         print(f"Error sending sign-up OTP email: {e}")
         return False
+@app.route('/dashboard')
+def dashboard():
+    if 'user_email' not in session:
+        return redirect('/login')
+    return render_template('dashboard.html')
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/home')
 
 @app.route('/', methods=['GET'])
 def backend_status():
