@@ -105,12 +105,23 @@ def signup_request_otp():
     if not data or 'email' not in data:
         return jsonify({'error': 'Email address is required'}), 400
     email = data['email']
-    otp = generate_otp()
-    signup_otp_store[email] = {'otp': str(otp), 'timestamp': time.time()}
-    if send_otp_email(email, otp):
-        return jsonify({'message': 'Sign-up OTP sent successfully'}), 200
-    else:
-        return jsonify({'error': 'Failed to send sign-up OTP'}), 500
+
+    # Check if user already exists in Firebase Auth
+    try:
+        auth.get_user_by_email(email)
+        return jsonify({'error': 'An account with this email already exists'}), 409
+    except firebase_admin.auth.UserNotFoundError:
+        # If not found, continue with OTP process
+        otp = generate_otp()
+        signup_otp_store[email] = {'otp': str(otp), 'timestamp': time.time()}
+        if send_otp_email(email, otp):
+            return jsonify({'message': 'Sign-up OTP sent successfully'}), 200
+        else:
+            return jsonify({'error': 'Failed to send sign-up OTP'}), 500
+    except Exception as e:
+        print(f"Error checking existing user: {e}")
+        return jsonify({'error': 'Internal server error while checking user existence'}), 500
+
 
 @app.route('/signup/verify-otp', methods=['POST'])
 def signup_verify_otp():
