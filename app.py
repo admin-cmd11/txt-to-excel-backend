@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, send_file
+from flask import Flask, request, jsonify, render_template, send_file, redirect, session
 from flask_cors import CORS
 import smtplib
 import random
@@ -11,6 +11,7 @@ from werkzeug.utils import secure_filename
 import shutil
 import atexit
 import json
+
 
 app = Flask(__name__)
 CORS(app)
@@ -151,6 +152,21 @@ def signup_verify_otp():
             return jsonify({'error': 'Sign-up OTP has expired'}), 401
     else:
         return jsonify({'error': 'Sign-up OTP not requested for this email'}), 400
+        
+@app.route('/sessionLogin', methods=['POST'])
+def session_login():
+    id_token = request.json.get('idToken')
+    if not id_token:
+        return jsonify({'error': 'Missing ID token'}), 400
+
+    try:
+        # Verify Firebase ID token
+        decoded_token = auth.verify_id_token(id_token)
+        session['user_email'] = decoded_token['email']
+        return jsonify({'message': 'Login successful'}), 200
+    except Exception as e:
+        print(f"Auth error: {e}")
+        return jsonify({'error': 'Unauthorized'}), 401
 
 @app.route('/process-file', methods=['POST'])
 def process_file():
