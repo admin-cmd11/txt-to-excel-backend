@@ -85,8 +85,8 @@ def send_otp_email(receiver_email, otp):
 @app.route('/dashboard')
 def dashboard():
     if 'user_email' not in session:
-        return redirect('/login')
-    return render_template('dashboard.html')
+        return redirect('/home')  # or '/login' if you prefer
+    return render_template('dashboard.html', email=session['user_email'])
 @app.route('/logout')
 def logout():
     session.clear()
