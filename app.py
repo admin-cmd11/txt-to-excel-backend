@@ -63,6 +63,9 @@ os.makedirs(TEMP_FOLDER, exist_ok=True)
 
 def generate_otp(length=4):
     return random.randrange(1000, 9999)
+@app.route('/home')
+def home():
+    return render_template('home.html')
 
 def send_otp_email(receiver_email, otp):
     subject = "OTP for Text to Excel Sign Up"
