@@ -19,7 +19,7 @@ cors = CORS(app, resources={r"/*": {"origins": "https://one-stopp.netlify.app", 
 # Global Firebase App instance and initialization flag
 firebase_app = None
 firebase_initialized = False
-
+app.secret_key = os.environ.get('FLASK_SECRET_KEY')
 # Firebase Admin SDK Initialization (Ensure only one initialization)
 try:
     if not firebase_initialized:
