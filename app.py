@@ -15,11 +15,11 @@ import json
 
 app = Flask(__name__)
 CORS(app)
-cors = CORS(app, resources={r"/*": {"origins": "https://one-stopp.netlify.app", "supports_credentials": True}})
+
 # Global Firebase App instance and initialization flag
 firebase_app = None
 firebase_initialized = False
-app.secret_key = os.environ.get('FLASK_SECRET_KEY')
+
 # Firebase Admin SDK Initialization (Ensure only one initialization)
 try:
     if not firebase_initialized:
@@ -63,9 +63,6 @@ os.makedirs(TEMP_FOLDER, exist_ok=True)
 
 def generate_otp(length=4):
     return random.randrange(1000, 9999)
-@app.route('/home')
-def home():
-    return render_template('home.html')
 
 def send_otp_email(receiver_email, otp):
     subject = "OTP for Text to Excel Sign Up"
@@ -82,15 +79,6 @@ def send_otp_email(receiver_email, otp):
     except Exception as e:
         print(f"Error sending sign-up OTP email: {e}")
         return False
-@app.route('/dashboard')
-def dashboard():
-    if 'user_email' not in session:
-        return redirect('/home')  # or '/login' if you prefer
-    return render_template('dashboard.html', email=session['user_email'])
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect('/home')
 
 @app.route('/', methods=['GET'])
 def backend_status():
@@ -169,29 +157,16 @@ def signup_verify_otp():
 def session_login():
     id_token = request.json.get('idToken')
     if not id_token:
-        print("Error: Missing ID token")  # Added logging
         return jsonify({'error': 'Missing ID token'}), 400
 
     try:
-        # Verify the token
-        print(f"Received ID token: {id_token}") # Log the ID Token
+        # Verify Firebase ID token
         decoded_token = auth.verify_id_token(id_token)
-        print(f"Decoded token: {decoded_token}") # Log the decoded token
-        user_email = decoded_token.get('email')
-
-        if not user_email:
-            print("Error: Token does not contain email") # Added logging
-            return jsonify({'error': 'Token does not contain email'}), 400
-
-        # Store in session
-        session['user_email'] = user_email
-        print(f"Session set for user: {user_email}")  # Added logging
-        return jsonify({'message': 'Session login successful'}), 200
-
+        session['user_email'] = decoded_token['email']
+        return jsonify({'message': 'Login successful'}), 200
     except Exception as e:
-        print(f"Error verifying ID token: {e}")
-        return jsonify({'error': 'Invalid or expired token'}), 401
-
+        print(f"Auth error: {e}")
+        return jsonify({'error': 'Unauthorized'}), 401
 
 @app.route('/process-file', methods=['POST'])
 def process_file():
