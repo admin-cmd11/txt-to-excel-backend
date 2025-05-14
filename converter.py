@@ -33,7 +33,7 @@ def convert_text_to_excel(file_path, output_path):
 
     students = []
     records = re.finditer(
-        r'(\d{8})\s+([MF])\s+([^\n]+?)\s+((?:\d{3}\s+)+)\s+(PASS|FAIL)\s*'
+        r'(\d{8})\s+([MF])\s+([^\n]+?)\s+((?:\d{3}\s+)+)\s+(PASS|FAIL|COM)\s*'
         r'(.*?)(?:\n|$)',
         content,
         re.DOTALL
